@@ -162,6 +162,29 @@ self.addEventListener('fetch', e => {
   navigator.serviceWorker.register(URL.createObjectURL(blob));
 }
 </script>
+
+<style>
+#fp-overlay { display: none; }
+#fp-overlay.show { display: flex !important; }
+
+@keyframes fp-scan {
+  0%   { y: 96; height: 0; }
+  100% { y: 4; height: 92; }
+}
+@keyframes fp-scanline-move {
+  0%   { transform: translateY(40px); opacity: 0.8; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+@keyframes fp-ring-pulse {
+  0%   { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes fp-dot-on {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+</style>
 </head>
 <body>
 
@@ -193,10 +216,69 @@ self.addEventListener('fetch', e => {
       <span>¡Plinea por WhatsApp sin abrir tu APP!</span>
       <svg width="14" height="14" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
     </div>
-    <button class="btn-b" onclick="go('s-home')">
+    <button class="btn-b" id="fingerprint-btn" onclick="startFingerprint()">
       <svg width="20" height="20" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M4.93 4.93l4.24 4.24"/><path d="M14.83 9.17l4.24-4.24"/><path d="M14.83 14.83l4.24 4.24"/><path d="M9.17 14.83l-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>
       Ingresar con huella digital
     </button>
+
+    <!-- FINGERPRINT OVERLAY -->
+    <div id="fp-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+      <div style="background:#1a1a2e;border-radius:24px;padding:36px 40px;display:flex;flex-direction:column;align-items:center;gap:16px;min-width:260px;">
+        <!-- Fingerprint SVG animado -->
+        <div id="fp-icon-wrap" style="position:relative;width:90px;height:90px;">
+          <svg id="fp-svg" viewBox="0 0 100 100" width="90" height="90">
+            <!-- Fondo círculo -->
+            <circle cx="50" cy="50" r="46" fill="#0d1b2a" stroke="#1B3E8C" stroke-width="2"/>
+            <!-- Líneas de huella -->
+            <g id="fp-lines" stroke="#555" stroke-width="2.2" fill="none" stroke-linecap="round">
+              <path d="M50 22 Q68 22 72 38 Q76 54 68 66 Q60 76 50 78"/>
+              <path d="M50 28 Q64 28 67 42 Q70 56 63 65 Q56 73 50 74"/>
+              <path d="M50 34 Q60 34 62 46 Q64 58 58 64 Q54 68 50 70"/>
+              <path d="M50 40 Q56 40 57 50 Q58 59 53 63 Q51.5 65 50 65"/>
+              <path d="M50 22 Q32 22 28 38 Q24 54 32 66 Q40 76 50 78"/>
+              <path d="M50 28 Q36 28 33 42 Q30 56 37 65 Q44 73 50 74"/>
+              <path d="M50 34 Q40 34 38 46 Q36 58 42 64 Q46 68 50 70"/>
+              <path d="M50 40 Q44 40 43 50 Q42 59 47 63 Q48.5 65 50 65"/>
+            </g>
+            <!-- Scan line -->
+            <line id="fp-scanline" x1="20" y1="50" x2="80" y2="50" stroke="#00A84F" stroke-width="2.5" opacity="0" stroke-linecap="round"/>
+            <!-- Overlay fill circle que revela -->
+            <clipPath id="fp-clip">
+              <rect id="fp-clip-rect" x="4" y="96" width="92" height="0"/>
+            </clipPath>
+            <g clip-path="url(#fp-clip)">
+              <circle cx="50" cy="50" r="46" fill="#0d1b2a" stroke="#1B3E8C" stroke-width="2"/>
+              <g stroke="#00A84F" stroke-width="2.2" fill="none" stroke-linecap="round">
+                <path d="M50 22 Q68 22 72 38 Q76 54 68 66 Q60 76 50 78"/>
+                <path d="M50 28 Q64 28 67 42 Q70 56 63 65 Q56 73 50 74"/>
+                <path d="M50 34 Q60 34 62 46 Q64 58 58 64 Q54 68 50 70"/>
+                <path d="M50 40 Q56 40 57 50 Q58 59 53 63 Q51.5 65 50 65"/>
+                <path d="M50 22 Q32 22 28 38 Q24 54 32 66 Q40 76 50 78"/>
+                <path d="M50 28 Q36 28 33 42 Q30 56 37 65 Q44 73 50 74"/>
+                <path d="M50 34 Q40 34 38 46 Q36 58 42 64 Q46 68 50 70"/>
+                <path d="M50 40 Q44 40 43 50 Q42 59 47 63 Q48.5 65 50 65"/>
+              </g>
+            </g>
+            <!-- Check circle (aparece al final) -->
+            <g id="fp-check" opacity="0">
+              <circle cx="50" cy="50" r="46" fill="#00A84F"/>
+              <path d="M32 50 L44 62 L68 36" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          <!-- Ripple rings -->
+          <div id="fp-ring1" style="position:absolute;inset:-8px;border-radius:50%;border:2px solid #00A84F;opacity:0;transform:scale(0.8);"></div>
+          <div id="fp-ring2" style="position:absolute;inset:-18px;border-radius:50%;border:2px solid #00A84F;opacity:0;transform:scale(0.8);"></div>
+        </div>
+
+        <div id="fp-msg" style="color:#aaa;font-size:15px;font-weight:500;text-align:center;">Coloca tu dedo en el sensor</div>
+        <div id="fp-dots" style="display:flex;gap:8px;">
+          <div class="fp-dot" style="width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;"></div>
+          <div class="fp-dot" style="width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;"></div>
+          <div class="fp-dot" style="width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;"></div>
+        </div>
+        <button onclick="cancelFingerprint()" style="background:transparent;border:none;color:#555;font-size:13px;cursor:pointer;margin-top:4px;">Cancelar</button>
+      </div>
+    </div>
     <div style="text-align:center;color:var(--text);font-size:15px;font-weight:500;cursor:pointer;padding:6px;">Ingresa con contraseña</div>
     <div style="text-align:center;color:var(--gray);font-size:11px;margin-top:auto;padding-top:16px;">v23.0</div>
   </div>
@@ -803,6 +885,121 @@ function launchFS() {
 
 // Init
 go('s-login');
+</script>
+
+<script>
+function startFingerprint() {
+  const overlay = document.getElementById('fp-overlay');
+  overlay.style.display = 'flex';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '99998';
+  overlay.style.background = 'rgba(0,0,0,0.75)';
+  overlay.style.flexDirection = 'column';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  resetFP();
+
+  // Step 1: scanning animation (0-1.5s)
+  const scanline = document.getElementById('fp-scanline');
+  const clipRect = document.getElementById('fp-clip-rect');
+  const msg = document.getElementById('fp-msg');
+  const dots = document.querySelectorAll('.fp-dot');
+  const ring1 = document.getElementById('fp-ring1');
+  const ring2 = document.getElementById('fp-ring2');
+  const check = document.getElementById('fp-check');
+
+  // Start scan line
+  scanline.style.opacity = '1';
+  let startTime = null;
+  let scanDone = false;
+
+  function animateScan(ts) {
+    if (!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+    const progress = Math.min(elapsed / 1500, 1); // 1.5s scan
+
+    // Move scan line from bottom to top
+    const yPos = 80 - (progress * 70);
+    scanline.setAttribute('y1', yPos);
+    scanline.setAttribute('y2', yPos);
+    scanline.style.opacity = progress < 0.95 ? '1' : '0';
+
+    // Reveal green lines from bottom
+    const revealY = 96 - (progress * 92);
+    const revealH = progress * 92;
+    clipRect.setAttribute('y', revealY);
+    clipRect.setAttribute('height', revealH);
+
+    // Activate dots progressively
+    if (progress > 0.25) dots[0].style.background = '#00A84F';
+    if (progress > 0.55) dots[1].style.background = '#00A84F';
+    if (progress > 0.80) dots[2].style.background = '#00A84F';
+
+    if (progress < 1) {
+      requestAnimationFrame(animateScan);
+    } else {
+      // Scan complete
+      msg.textContent = 'Verificando...';
+      msg.style.color = '#00A84F';
+      setTimeout(showSuccess, 400);
+    }
+  }
+
+  requestAnimationFrame(animateScan);
+}
+
+function showSuccess() {
+  const check = document.getElementById('fp-check');
+  const msg = document.getElementById('fp-msg');
+  const ring1 = document.getElementById('fp-ring1');
+  const ring2 = document.getElementById('fp-ring2');
+  const overlay = document.getElementById('fp-overlay');
+
+  // Show checkmark
+  check.style.opacity = '1';
+  check.style.transition = 'opacity 0.3s';
+  msg.textContent = '¡Identidad verificada!';
+  msg.style.color = '#00A84F';
+  msg.style.fontWeight = '700';
+
+  // Ripple rings
+  ring1.style.transition = 'all 0.6s ease-out';
+  ring1.style.opacity = '0.6';
+  ring1.style.transform = 'scale(1.4)';
+  setTimeout(() => {
+    ring2.style.transition = 'all 0.6s ease-out';
+    ring2.style.opacity = '0.4';
+    ring2.style.transform = 'scale(1.6)';
+  }, 150);
+
+  // Navigate after brief pause
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    go('s-home');
+  }, 900);
+}
+
+function resetFP() {
+  document.getElementById('fp-check').style.opacity = '0';
+  document.getElementById('fp-scanline').style.opacity = '0';
+  document.getElementById('fp-clip-rect').setAttribute('y', '96');
+  document.getElementById('fp-clip-rect').setAttribute('height', '0');
+  document.getElementById('fp-msg').textContent = 'Coloca tu dedo en el sensor';
+  document.getElementById('fp-msg').style.color = '#aaa';
+  document.getElementById('fp-msg').style.fontWeight = '500';
+  document.getElementById('fp-ring1').style.transform = 'scale(0.8)';
+  document.getElementById('fp-ring1').style.opacity = '0';
+  document.getElementById('fp-ring2').style.transform = 'scale(0.8)';
+  document.getElementById('fp-ring2').style.opacity = '0';
+  document.querySelectorAll('.fp-dot').forEach(d => d.style.background = '#333');
+}
+
+function cancelFingerprint() {
+  document.getElementById('fp-overlay').style.display = 'none';
+  resetFP();
+}
 </script>
 </body>
 </html>
