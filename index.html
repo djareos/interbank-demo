@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Interbank</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#00A84F">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+:root{
+  --g:#00A84F;--gd:#007A38;--gl:#E8F8EF;
+  --b:#1B3E8C;--bl:#2B5CB8;
+  --gray:#6B7280;--glight:#F3F4F6;--gborder:#E5E7EB;
+  --text:#111827;--white:#fff;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;}
+/* SCREENS */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;background:var(--white);overflow:hidden;}
+.screen.active{display:flex;}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.scroll::-webkit-scrollbar{display:none;}
+/* STATUS BAR */
+.sb{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;flex-shrink:0;}
+.sb.green{background:var(--g);color:#fff;}
+.sb.white{background:#fff;color:var(--text);}
+.sb.lgreen{background:var(--gl);color:var(--text);}
+.sb .icons{display:flex;gap:3px;align-items:center;}
+/* BOTTOM NAV */
+.bnav{background:#fff;border-top:1px solid var(--gborder);display:grid;grid-template-columns:1fr 1fr 56px 1fr 1fr;align-items:end;padding:6px 0 14px;flex-shrink:0;position:relative;}
+.bnav .ni{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:2px 0;}
+.bnav .ni svg{width:22px;height:22px;color:var(--gray);}
+.bnav .ni span{font-size:10px;color:var(--gray);}
+.bnav .ni.act svg{color:var(--g);}
+.bnav .ni.act span{color:var(--g);font-weight:600;}
+.bnav .qr{width:48px;height:48px;background:var(--b);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:4px;align-self:flex-end;}
+.bnav .qr svg{width:24px;height:24px;color:#fff;}
+/* NAV HEADER */
+.nh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;flex-shrink:0;}
+.nh.green{background:var(--g);}
+.nh.white{background:#fff;border-bottom:1px solid var(--gborder);}
+.nh.lgreen{background:var(--gl);}
+.nh .title{font-size:16px;font-weight:700;}
+.nh .back{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.nh .back svg{width:22px;height:22px;}
+.nh .icons2{display:flex;gap:6px;}
+.nh .icons2 .ic{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.nh .icons2 .ic svg{width:20px;height:20px;}
+.nh .icons2 .dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:#EF4444;border-radius:50%;}
+/* BUTTONS */
+.btn-g{background:var(--g);color:#fff;border:none;border-radius:12px;padding:14px;width:100%;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-o{background:#fff;color:var(--g);border:2px solid var(--g);border-radius:12px;padding:12px;width:100%;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-b{background:var(--b);color:#fff;border:none;border-radius:12px;padding:14px;width:100%;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+/* MOV items */
+.mv{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--gborder);cursor:pointer;background:#fff;}
+.mv:active{background:var(--glight);}
+.mv .ml{flex:1;}
+.mv .mn{font-size:13px;font-weight:600;color:var(--text);}
+.mv .mn.gry{font-weight:400;color:var(--gray);}
+.mv .md{font-size:11px;color:var(--gray);margin-top:1px;}
+.mv .mr{text-align:right;}
+.mv .ma{font-size:13px;font-weight:700;color:var(--text);}
+.mv .ma.grn{color:var(--g);}
+.mv .ma.gry{color:var(--gray);}
+.mv .ma.red{color:#EF4444;}
+.mv .mp{font-size:10px;color:var(--gray);}
+.mv .arr{color:var(--gray);margin-left:6px;font-size:13px;}
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--gborder);background:#fff;flex-shrink:0;}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:13px;color:var(--gray);cursor:pointer;position:relative;font-weight:500;}
+.tab.act{color:var(--g);font-weight:700;}
+.tab.act::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--g);border-radius:2px 2px 0 0;}
+.tab.actb{color:var(--b);font-weight:700;}
+.tab.actb::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--b);border-radius:2px 2px 0 0;}
+/* PRODUCT ITEM */
+.pi{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--gborder);cursor:pointer;}
+.pi:active{background:var(--glight);}
+.pi .pico{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;}
+.pi .pico.pink{background:#FFE0E0;}
+.pi .pico.pinkd{background:#FFCDD2;}
+.pi .pico.green{background:#E0FFE8;}
+.pi .pico.card{background:#E0EFFF;}
+.pi .pico.cts{background:#FFE0C0;}
+.pi .pico.inv{background:#FFF3E0;}
+.pi .pico.seg{background:#E0E8FF;}
+.pi .inf{flex:1;}
+.pi .pname{font-size:13px;color:var(--gray);}
+.pi .pamt{font-size:19px;font-weight:800;color:var(--text);}
+.pi .plbl{font-size:11px;color:var(--gray);}
+.pi .parr svg{width:14px;height:14px;color:var(--gray);}
+/* INFO ROW */
+.ir{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gborder);}
+.ir:last-child{border:none;}
+.ik{font-size:12px;color:var(--gray);}
+.iv{font-size:13px;font-weight:700;color:var(--text);}
+.iv.blue{color:var(--b);}
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--g);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;}
+#splash .slogo{background:#fff;border-radius:22px;width:88px;height:88px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(0,0,0,.2);}
+#splash h1{color:#fff;font-size:28px;font-weight:700;}
+#splash p{color:rgba(255,255,255,.7);font-size:13px;}
+#splash .sbtn{margin-top:28px;background:#fff;color:var(--g);border:none;border-radius:50px;padding:15px 40px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.2);}
+/* LOADING SPINNER */
+.spinner{width:32px;height:32px;border:3px solid var(--gl);border-top-color:var(--g);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* CARD VISUAL */
+.card-vis{background:#2A2A2A;margin:14px;border-radius:16px;padding:18px;color:#fff;position:relative;overflow:hidden;}
+.card-vis::before{content:'';position:absolute;top:-30px;right:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.04);}
+/* BANNER */
+.banner{background:var(--gd);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;color:#fff;font-size:12px;cursor:pointer;}
+.banner .bclose{margin-left:auto;width:20px;height:20px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+/* QUICK GRID */
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:14px;}
+.qi{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:6px 2px;border-radius:12px;}
+.qi:active{background:var(--glight);}
+.qi .qico{width:50px;height:50px;background:var(--glight);border-radius:13px;display:flex;align-items:center;justify-content:center;position:relative;}
+.qi .qico svg{width:23px;height:23px;color:var(--g);}
+.qi .qlbl{font-size:10px;color:var(--text);text-align:center;font-weight:500;line-height:1.2;}
+.badge-new{position:absolute;top:-3px;right:-3px;background:var(--b);color:#fff;font-size:8px;padding:1px 4px;border-radius:6px;font-weight:700;}
+.badge-plin{position:absolute;bottom:2px;right:2px;background:var(--g);color:#fff;font-size:7px;padding:1px 3px;border-radius:5px;font-weight:700;}
+/* SECTION TITLE */
+.stitle{padding:14px 14px 6px;font-size:16px;font-weight:800;color:var(--g);}
+/* FAV ITEMS */
+.fav-row{display:flex;gap:10px;overflow-x:auto;padding:0 14px 14px;}
+.fav-row::-webkit-scrollbar{display:none;}
+.fav-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer;}
+.fav-ico{width:52px;height:52px;background:var(--glight);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--gborder);}
+.fav-lbl{font-size:10px;color:var(--text);text-align:center;max-width:60px;line-height:1.2;}
+/* OPERACIONES */
+.op-title{font-size:18px;font-weight:800;color:var(--g);padding:14px 14px 8px;}
+.op-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--gborder);cursor:pointer;}
+.op-item:active{background:var(--glight);}
+/* BENEFICIOS cards */
+.ben-card{border-radius:14px;overflow:hidden;border:1px solid var(--gborder);flex-shrink:0;}
+/* MENU lateral */
+.menu-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--gborder);cursor:pointer;}
+.menu-item:active{background:var(--glight);}
+.menu-item .mi-left{display:flex;align-items:center;gap:12px;}
+.menu-item .mi-left svg{width:20px;height:20px;color:var(--g);}
+.menu-item span{font-size:14px;font-weight:600;color:var(--text);}
+.menu-item .arr svg{width:14px;height:14px;color:var(--gray);}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" onclick="launchFS()">
+  <div class="slogo">
+    <svg viewBox="0 0 48 48" width="56" height="56">
+      <rect x="4" y="4" width="18" height="18" rx="3" fill="#00A84F"/>
+      <rect x="26" y="4" width="18" height="18" rx="3" fill="#1B3E8C"/>
+      <rect x="4" y="26" width="18" height="18" rx="3" fill="#1B3E8C"/>
+      <rect x="26" y="26" width="18" height="18" rx="3" fill="#00A84F"/>
+    </svg>
+  </div>
+  <h1>Interbank</h1>
+  <p>App Demo</p>
+  <button class="sbtn">▶ &nbsp;Abrir pantalla completa</button>
+  <p style="font-size:11px;margin-top:4px;">Toca para iniciar</p>
+</div>
+
+<!-- ===== LOGIN ===== -->
+<div class="screen" id="s-login">
+  <div style="background:var(--g);flex:1;display:flex;flex-direction:column;align-items:center;padding-top:60px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="background:#fff;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 48 48" width="24" height="24"><rect x="4" y="4" width="18" height="18" rx="3" fill="#00A84F"/><rect x="26" y="4" width="18" height="18" rx="3" fill="#1B3E8C"/><rect x="4" y="26" width="18" height="18" rx="3" fill="#1B3E8C"/><rect x="26" y="26" width="18" height="18" rx="3" fill="#00A84F"/></svg>
+      </div>
+      <span style="color:#fff;font-size:20px;font-weight:700;">Interbank</span>
+    </div>
+    <div style="color:#fff;font-size:26px;font-weight:300;margin-top:24px;">Hola, <strong>Pedro</strong></div>
+  </div>
+  <div style="background:#fff;border-radius:28px 28px 0 0;padding:28px 20px 36px;margin-top:-24px;display:flex;flex-direction:column;gap:14px;">
+    <div class="banner" style="margin:0;">
+      <div style="width:30px;height:30px;background:#25D366;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9 9 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+      </div>
+      <span>¡Plinea por WhatsApp sin abrir tu APP!</span>
+      <svg width="14" height="14" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <button class="btn-b" onclick="go('s-home')">
+      <svg width="20" height="20" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M4.93 4.93l4.24 4.24"/><path d="M14.83 9.17l4.24-4.24"/><path d="M14.83 14.83l4.24 4.24"/><path d="M9.17 14.83l-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>
+      Ingresar con huella digital
+    </button>
+    <div style="text-align:center;color:var(--text);font-size:15px;font-weight:500;cursor:pointer;padding:6px;">Ingresa con contraseña</div>
+    <div style="text-align:center;color:var(--gray);font-size:11px;margin-top:auto;padding-top:16px;">v23.0</div>
+  </div>
+</div>
+
+<!-- ===== HOME ACCESOS RÁPIDOS ===== -->
+<div class="screen" id="s-home">
+  <div class="sb green"><span>10:16 mar 9</span><div class="icons"><svg width="12" height="12" fill="#fff" viewBox="0 0 24 24"><path d="M1.5 8.5C3.5 6.5 6.5 5 12 5s8.5 1.5 10.5 3.5M5 12c1.5-1.5 3.5-2.5 7-2.5s5.5 1 7 2.5M8.5 15.5C9.5 14.5 10.5 14 12 14s2.5.5 3.5 1.5"/><circle cx="12" cy="19" r="1" fill="#fff"/></svg><span>79</span></div></div>
+  <div class="nh green" style="padding:8px 14px 12px;">
+    <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="go('s-menu')">
+      <svg width="18" height="18" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;color:#fff;font-size:18px;font-weight:700;">
+      <div style="background:#fff;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 48 48" width="16" height="16"><rect x="4" y="4" width="18" height="18" rx="2" fill="#00A84F"/><rect x="26" y="4" width="18" height="18" rx="2" fill="#1B3E8C"/><rect x="4" y="26" width="18" height="18" rx="2" fill="#1B3E8C"/><rect x="26" y="26" width="18" height="18" rx="2" fill="#00A84F"/></svg>
+      </div>
+      Interbank
+    </div>
+    <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <svg width="22" height="22" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+  </div>
+  <div style="background:var(--g);padding:0 14px 12px;">
+    <div class="banner">
+      <div style="font-size:22px;">📱</div>
+      <div><div style="font-weight:700;font-size:12px;color:#4ADE80;">Tu Interbank App cambió</div><div style="font-size:11px;">Revisa el recorrido guiado aquí y descubre todas las mejoras.</div></div>
+      <svg width="14" height="14" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+      <div class="bclose">✕</div>
+    </div>
+  </div>
+  <!-- TABS -->
+  <div style="display:flex;background:#fff;border-bottom:2px solid var(--gborder);">
+    <div class="tab actb" onclick="go('s-home')">Accesos rápidos</div>
+    <div class="tab" onclick="go('s-productos')">Mis productos</div>
+  </div>
+  <div class="scroll">
+    <div style="text-align:center;padding:6px;font-size:11px;color:var(--gray);background:#fff;border-bottom:1px solid var(--gborder);">T.C. referencial: Compra: 3.345 | Venta: 3.415</div>
+    <!-- Quick grid -->
+    <div class="qgrid">
+      <div class="qi"><div class="qico"><svg viewBox="0 0 48 48" width="28" height="28"><circle cx="24" cy="24" r="20" fill="#4CAF50"/><text y="30" x="12" font-size="18" fill="#fff" font-weight="700">plin</text></svg></div><div class="qlbl">Plinear</div></div>
+      <div class="qi"><div class="qico"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg></div><div class="qlbl">Transferir dinero</div></div>
+      <div class="qi"><div class="qico"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="qlbl">Pagar servicios</div></div>
+      <div class="qi" onclick="go('s-tarjeta')"><div class="qico" style="position:relative;"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span class="badge-new">Nuevo</span></div><div class="qlbl">Ver datos de tarjeta</div></div>
+      <div class="qi"><div class="qico"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><div class="qlbl">Recargar celular</div></div>
+      <div class="qi"><div class="qico" style="position:relative;"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M6 12h.01M10 12h.01M6 16h.01M10 16h.01"/></svg><span class="badge-plin">Plin</span></div><div class="qlbl">Recargar transporte</div></div>
+      <div class="qi"><div class="qico" style="background:var(--g);"><svg width="24" height="24" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div class="qlbl">Agregar cuenta</div></div>
+      <div class="qi"><div class="qico"><svg width="24" height="24" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div><div class="qlbl">Ver más opciones</div></div>
+    </div>
+    <!-- Banners -->
+    <div style="display:flex;gap:10px;padding:0 14px 14px;overflow-x:auto;">
+      <div style="background:#E8F8EF;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;border:1px solid #C0EDD4;">
+        <div style="width:26px;height:26px;background:#25D366;border-radius:7px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="#fff" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52c.149-.174.198-.298.298-.497c.099-.198.05-.371-.025-.52c-.075-.149-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a9 9 0 0 0-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074c.149.198 2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413c.248-.694.248-1.289.173-1.413z"/></svg></div>
+        <span style="font-size:12px;color:var(--g);font-weight:600;">¡Plinea por Whatsapp aquí!</span>
+      </div>
+      <div style="background:#E8F8EF;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;border:1px solid #C0EDD4;">
+        <span style="font-size:16px;">✈️</span>
+        <span style="font-size:12px;color:var(--g);font-weight:600;">Millas Benefit</span>
+      </div>
+    </div>
+    <!-- Favoritos -->
+    <div class="stitle" style="color:var(--text);">Favoritos</div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;padding:0 14px 8px;margin-top:-10px;"><span style="font-size:13px;color:var(--text);font-weight:600;cursor:pointer;">Ver todos ›</span></div>
+    <div class="fav-row">
+      <div class="fav-item"><div class="fav-ico" style="background:#E8F8EF;border-color:var(--g);">⭐</div><div class="fav-lbl">Esposa Vida Mia</div></div>
+      <div class="fav-item"><div class="fav-ico">💡</div><div class="fav-lbl">pago de luz casa chilca</div></div>
+      <div class="fav-item"><div class="fav-ico">🏦</div><div class="fav-lbl">cuenta bcp pedro silva</div></div>
+      <div class="fav-item"><div class="fav-ico">💡</div><div class="fav-lbl">internet 2026 wow</div></div>
+    </div>
+    <!-- Mis finanzas -->
+    <div class="stitle" style="color:var(--text);">Mis finanzas</div>
+    <div style="margin:0 14px 14px;background:var(--gl);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:15px;font-weight:800;color:var(--text);">Conoce y controla</div><div style="font-size:12px;color:var(--gray);margin:4px 0 10px;">tus gastos e ingresos desde aquí</div><button class="btn-b" style="width:auto;padding:8px 18px;font-size:13px;border-radius:10px;">Revisar ›</button></div>
+      <div style="font-size:48px;">💰</div>
+    </div>
+    <div style="height:10px;"></div>
+  </div>
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="ni act" onclick="go('s-home')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></div>
+    <div class="ni" onclick="go('s-operaciones')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg><span>Operaciones</span></div>
+    <div style="display:flex;justify-content:center;align-items:flex-end;"><div class="qr"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h3M17 14v3M21 14v.01M21 21v.01"/></svg></div></div>
+    <div class="ni" onclick="go('s-beneficios')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/></svg><span>Beneficios</span></div>
+    <div class="ni" onclick="go('s-parati')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Para ti</span></div>
+  </div>
+</div>
+
+<!-- ===== MIS PRODUCTOS ===== -->
+<div class="screen" id="s-productos">
+  <div class="sb green"><span>10:16 mar 9</span><div class="icons"><span>79</span></div></div>
+  <div class="nh green" style="padding:8px 14px 12px;">
+    <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="go('s-menu')">
+      <svg width="18" height="18" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;color:#fff;font-size:18px;font-weight:700;">
+      <div style="background:#fff;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 48 48" width="16" height="16"><rect x="4" y="4" width="18" height="18" rx="2" fill="#00A84F"/><rect x="26" y="4" width="18" height="18" rx="2" fill="#1B3E8C"/><rect x="4" y="26" width="18" height="18" rx="2" fill="#1B3E8C"/><rect x="26" y="26" width="18" height="18" rx="2" fill="#00A84F"/></svg></div>
+      Interbank
+    </div>
+    <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="22" height="22" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+  </div>
+  <div style="background:var(--g);padding:0 14px 12px;">
+    <div class="banner"><div style="font-size:22px;">📱</div><div><div style="font-weight:700;font-size:12px;color:#4ADE80;">Tu Interbank App cambió</div><div style="font-size:11px;">Revisa el recorrido guiado aquí y descubre todas las mejoras.</div></div><svg width="14" height="14" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg><div class="bclose">✕</div></div>
+  </div>
+  <div style="display:flex;background:#fff;border-bottom:2px solid var(--gborder);">
+    <div class="tab" onclick="go('s-home')">Accesos rápidos</div>
+    <div class="tab actb" onclick="go('s-productos')">Mis productos</div>
+  </div>
+  <div class="scroll">
+    <div style="display:flex;align-items:center;gap:6px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--gborder);">
+      <svg width="18" height="18" fill="none" stroke="var(--gray)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <span style="font-size:13px;color:var(--gray);font-weight:500;">Ver datos de tarjeta</span>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <div style="width:30px;height:30px;border:2px solid var(--b);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="13" height="13" fill="none" stroke="var(--b)" viewBox="0 0 24 24" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div>
+        <div style="width:30px;height:30px;border:2px solid var(--b);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="13" height="13" fill="none" stroke="var(--b)" viewBox="0 0 24 24" stroke-width="2"><path d="M17.94 17.94A10 10 0 0 1 12 20c-7 0-11-8-11-8a18 18 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18 18 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></div>
+      </div>
+    </div>
+    <div class="pi" onclick="go('s-cuenta')">
+      <div class="pico pink">🐷</div>
+      <div class="inf"><div class="pname">Ahorro Sueldo Soles</div><div class="pamt">S/ 170,652.96</div><div class="plbl">Saldo disponible</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi">
+      <div class="pico pinkd">🐷</div>
+      <div class="inf"><div class="pname">Súper Tasa Dólares</div><div class="pamt">$0.00</div><div class="plbl">Saldo disponible</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi" onclick="go('s-tarjeta')">
+      <div class="pico card"><svg width="22" height="22" fill="none" stroke="var(--b)" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="inf"><div class="pname">Interbank Visa Infinite</div><div class="pamt">S/ 14,862.38</div><div class="plbl">Línea disponible</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi" onclick="go('s-prestamo')">
+      <div class="pico green"><svg width="22" height="22" fill="none" stroke="var(--g)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+      <div class="inf"><div class="pname">Préstamo Efectivo Soles</div><div class="pamt">S/ 50,780.46</div><div class="plbl">Deuda total</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi" onclick="go('s-cts')">
+      <div class="pico cts">🐷</div>
+      <div class="inf"><div class="pname">CTS Soles</div><div class="pamt">S/ 10.19</div><div class="plbl">Saldo disponible</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi">
+      <div class="pico cts">🐷</div>
+      <div class="inf"><div class="pname">Cuenta Simple AFP Soles</div><div class="pamt">S/ 0.00</div><div class="plbl">Saldo disponible</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi">
+      <div class="pico seg"><svg width="22" height="22" fill="none" stroke="var(--b)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="inf"><div class="pname">Mis Seguros</div><div class="pamt" style="font-size:13px;color:var(--gray);font-weight:500;">Información y pagos</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div class="pi">
+      <div class="pico inv"><svg width="22" height="22" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+      <div class="inf"><div class="pname">Mis Inversiones</div><div class="pamt" style="font-size:13px;color:var(--gray);font-weight:500;">Ver detalle</div></div>
+      <div class="parr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+    <div style="margin:14px;border:2px dashed var(--gborder);border-radius:14px;padding:16px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+      <div style="width:28px;height:28px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;">Agregar nuevo producto</div><div style="font-size:12px;color:var(--gray);">Obtén una cuenta, tarjeta y más.</div></div>
+    </div>
+    <!-- Favoritos banner -->
+    <div style="display:flex;gap:10px;padding:0 14px 14px;overflow-x:auto;">
+      <div style="background:#E8F8EF;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;border:1px solid #C0EDD4;"><span style="font-size:14px;">💬</span><span style="font-size:12px;color:var(--g);font-weight:600;">¡Plinea por Whatsapp aquí!</span></div>
+      <div style="background:#E8F8EF;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;border:1px solid #C0EDD4;"><span style="font-size:14px;">✈️</span><span style="font-size:12px;color:var(--g);font-weight:600;">Millas Benefit</span></div>
+    </div>
+    <div class="stitle" style="color:var(--text);">Favoritos</div>
+    <div class="fav-row">
+      <div class="fav-item"><div class="fav-ico" style="background:#E8F8EF;border-color:var(--g);">⭐</div><div class="fav-lbl">Esposa Vida Mia</div></div>
+      <div class="fav-item"><div class="fav-ico">💡</div><div class="fav-lbl">pago de luz</div></div>
+      <div class="fav-item"><div class="fav-ico">🏦</div><div class="fav-lbl">cuenta bcp</div></div>
+      <div class="fav-item"><div class="fav-ico">💡</div><div class="fav-lbl">internet wow</div></div>
+    </div>
+    <div style="height:10px;"></div>
+  </div>
+  <div class="bnav">
+    <div class="ni act" onclick="go('s-home')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></div>
+    <div class="ni" onclick="go('s-operaciones')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg><span>Operaciones</span></div>
+    <div style="display:flex;justify-content:center;align-items:flex-end;"><div class="qr"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h3M17 14v3"/></svg></div></div>
+    <div class="ni" onclick="go('s-beneficios')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/></svg><span>Beneficios</span></div>
+    <div class="ni" onclick="go('s-parati')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Para ti</span></div>
+  </div>
+</div>
+
+<!-- ===== CUENTA AHORRO ===== -->
+<div class="screen" id="s-cuenta">
+  <div class="sb lgreen"><span>10:17 mar 9</span><div class="icons"><span>79</span></div></div>
+  <div class="nh lgreen">
+    <div class="back" onclick="go('s-productos')"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">Mi Cuenta</div>
+    <div class="icons2"><div class="ic" style="position:relative;"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg><span class="dot"></span></div><div class="ic"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div></div>
+  </div>
+  <div class="scroll">
+    <!-- Account card -->
+    <div style="background:var(--gl);padding:14px;">
+      <div style="background:#fff;border-radius:14px;padding:13px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <div style="font-size:28px;">🐷</div>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:700;">Ahorro Sueldo Soles</div><div style="font-size:12px;color:var(--gray);">043 3150116419</div></div>
+        <svg width="18" height="18" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <svg width="18" height="18" fill="none" stroke="var(--gray)" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <!-- Balances -->
+    <div style="background:var(--gl);padding:0 14px 12px;display:flex;gap:16px;">
+      <div style="flex:1;"><div style="font-size:11px;color:var(--gray);">Saldo disponible</div><div style="font-size:21px;font-weight:800;">S/ 170,652.96</div></div>
+      <div><div style="font-size:11px;color:var(--gray);">Ahorro total</div><div style="font-size:17px;font-weight:700;">S/ 0.61</div></div>
+    </div>
+    <!-- Alcancías -->
+    <div style="background:var(--gl);padding:0 14px 14px;">
+      <div style="background:var(--b);border-radius:24px;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="color:rgba(255,255,255,.5);font-size:18px;">◀◀</span>
+        <div style="width:32px;height:32px;background:var(--g);border-radius:50%;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:13px;font-weight:700;">S/</span></div>
+        <span style="color:rgba(255,255,255,.5);font-size:18px;">▶▶</span>
+      </div>
+      <div style="display:flex;gap:16px;justify-content:space-around;">
+        <div style="text-align:center;"><div style="width:44px;height:44px;border-radius:50%;border:2px solid var(--g);background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px;">🐷</div><div style="font-size:11px;font-weight:700;">S/ 0.61</div><div style="font-size:10px;color:var(--gray);">Mi alcancía</div></div>
+        <div style="text-align:center;"><div style="width:44px;height:44px;border-radius:50%;border:2px solid var(--b);background:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">✈️</div><div style="font-size:11px;font-weight:700;">S/ 0</div><div style="font-size:10px;color:var(--gray);">celulares entel</div></div>
+        <div style="text-align:center;cursor:pointer;"><div style="width:44px;height:44px;border-radius:50%;border:2px dashed var(--g);background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--g);margin:0 auto 4px;">+</div><div style="font-size:11px;color:var(--g);font-weight:600;">Agregar</div><div style="font-size:10px;color:var(--gray);">alcancía</div></div>
+        <div style="text-align:center;cursor:pointer;"><div style="width:44px;height:44px;border-radius:50%;border:2px dashed var(--g);background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--g);margin:0 auto 4px;">+</div><div style="font-size:11px;color:var(--g);font-weight:600;">Agregar</div><div style="font-size:10px;color:var(--gray);">alcancía</div></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--gray);margin:8px 0 10px;">Ahorro total en alcancías: S/ 0.61</div>
+      <button class="btn-o" style="font-size:12px;padding:9px;margin-bottom:10px;">Ocultar saldos 👁</button>
+      <button class="btn-g" style="font-size:13px;padding:11px;">Revisar mis alcancías</button>
+    </div>
+    <!-- Actions -->
+    <div style="display:flex;justify-content:space-around;padding:12px 14px;background:#fff;border-bottom:1px solid var(--gborder);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div><span style="font-size:11px;">Ver datos</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><span style="font-size:11px;">Condiciones</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#4285F4;">G</div><span style="font-size:11px;">Google Pay</span></div>
+    </div>
+    <!-- Movimientos -->
+    <div class="tabs"><div class="tab act">Movimientos</div><div class="tab">Movimientos alcancía</div></div>
+    <div class="mv" onclick="go('s-detmov','Yape-Renzo D','Mar 09 Jun | 9:47 pm','S/ -70.00','Yape - débito')"><div class="ml"><div class="mn">Yape-Renzo D</div><div class="md">Mar 09 Jun | 9:47 pm</div></div><div class="mr"><div class="ma">S/ -70.00</div></div><span class="arr">›</span></div>
+    <div class="mv" onclick="go('s-detmov','Plin-Sheyla','Mar 09 Jun | 3:40 pm','S/ 100.00','Plin - recibido')"><div class="ml"><div class="mn">Plin-Sheyla</div><div class="md">Mar 09 Jun | 3:40 pm</div></div><div class="mr"><div class="ma grn">S/ 100.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Itf Automa</div><div class="md">Mar 09 Jun | 2:55 pm</div></div><div class="mr"><div class="ma">S/ -8.50</div></div><span class="arr">›</span></div>
+    <div class="mv" onclick="go('s-detmov','Cp01596858','Mar 09 Jun | 2:55 pm','S/ 170,631.02','Cobro planilla')"><div class="ml"><div class="mn">Cp01596858</div><div class="md">Mar 09 Jun | 2:55 pm</div></div><div class="mr"><div class="ma grn">S/ 170,631.02</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin-Sheyla</div><div class="md">Sáb 06 Jun | 1:59 pm</div></div><div class="mr"><div class="ma">S/ -445.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin-Sheyla</div><div class="md">Sáb 06 Jun | 1:59 pm</div></div><div class="mr"><div class="ma">S/ -500.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin-Sheyla</div><div class="md">Sáb 06 Jun | 1:51 pm</div></div><div class="mr"><div class="ma">S/ -280.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Itf I-Banc E</div><div class="md">Sáb 06 Jun | 1:46 pm</div></div><div class="mr"><div class="ma">S/ -620.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Pago Mi Tc</div><div class="md">Mié 03 Jun | 11:49 am</div></div><div class="mr"><div class="ma">S/ -4,829.10</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Pago Mi Tc</div><div class="md">Mié 03 Jun | 11:49 am</div></div><div class="mr"><div class="ma">S/ -82.09</div></div><span class="arr">›</span></div>
+    <div class="mv" onclick="go('s-detmov','Transf Web/App','Mié 03 Jun | 11:39 am','S/ 4,830.00','Transf Web/App')"><div class="ml"><div class="mn">Transf Web/App</div><div class="md">Mié 03 Jun | 11:39 am</div></div><div class="mr"><div class="ma grn">S/ 4,830.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Itf I-Banc E</div><div class="md">Mié 03 Jun | 12:16 pm</div></div><div class="mr"><div class="ma">S/ -884.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Itf 00043174</div><div class="md">Mié 03 Jun | 12:00 am</div></div><div class="mr"><div class="ma">S/ -0.35</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Pag-04207177</div><div class="md">Lun 01 Jun | 10:51 am</div></div><div class="mr"><div class="ma">S/ -39.90</div></div><span class="arr">›</span></div>
+    <div style="height:16px;background:#fff;"></div>
+  </div>
+</div>
+
+<!-- ===== TARJETA ===== -->
+<div class="screen" id="s-tarjeta">
+  <div class="sb white"><span>10:18 mar 9</span><div class="icons" style="color:var(--text);"><span>79</span></div></div>
+  <div class="nh white">
+    <div class="back" onclick="go('s-productos')"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">Mi tarjeta</div>
+    <div class="icons2"><div class="ic" style="position:relative;"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg><span class="dot"></span></div><div class="ic"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div></div>
+  </div>
+  <div class="scroll">
+    <div class="card-vis">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:700;">Interbank Visa Infinite</div>
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;width:36px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 48 48" width="20" height="20"><rect x="4" y="4" width="18" height="18" rx="2" fill="rgba(255,255,255,0.3)"/><rect x="26" y="4" width="18" height="18" rx="2" fill="rgba(255,255,255,0.2)"/><rect x="4" y="26" width="18" height="18" rx="2" fill="rgba(255,255,255,0.2)"/><rect x="26" y="26" width="18" height="18" rx="2" fill="rgba(255,255,255,0.3)"/></svg></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><div style="background:#fff;border-radius:3px;padding:1px 6px;"><span style="font-size:10px;font-weight:900;color:#1A1F71;">VISA</span></div><span style="font-size:17px;font-weight:700;letter-spacing:2px;">4591</span></div>
+      <div style="height:6px;background:rgba(255,255,255,.2);border-radius:3px;margin-bottom:8px;overflow:hidden;"><div style="height:100%;width:36%;background:var(--g);border-radius:3px;"></div></div>
+      <div style="display:flex;justify-content:space-between;">
+        <div><div style="font-size:10px;color:rgba(255,255,255,.6);">Consumido</div><div style="font-size:16px;font-weight:700;">S/ 8,137.62</div></div>
+        <div style="text-align:right;"><div style="font-size:10px;color:rgba(255,255,255,.6);">Disponible</div><div style="font-size:16px;font-weight:700;color:#4ADE80;">S/ 14,862.38</div></div>
+      </div>
+    </div>
+    <!-- Pay tabs -->
+    <div id="ptabs" style="display:flex;background:#fff;border-bottom:1px solid var(--gborder);">
+      <div class="tab act" id="pt1" onclick="switchPayTab(1)">Pago del mes</div>
+      <div class="tab" id="pt2" onclick="switchPayTab(2)">Pago mínimo</div>
+      <div class="tab" id="pt3" onclick="switchPayTab(3)">Deuda total</div>
+    </div>
+    <div id="pc1" style="margin:14px;background:var(--glight);border-radius:14px;padding:15px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-size:14px;font-weight:700;">Pago del mes</div><div style="font-size:11px;color:var(--gray);">Vence el 12/06</div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;">S/ 0.00</div><div style="font-size:12px;color:var(--gray);">US$ 0.00</div></div></div>
+      <div style="color:var(--g);font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;margin-bottom:12px;cursor:pointer;"><svg width="14" height="14" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Ver mis fechas de pago</div>
+      <button class="btn-g">Pagar tarjeta</button>
+    </div>
+    <div id="pc2" style="display:none;margin:14px;background:var(--glight);border-radius:14px;padding:15px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;"><div><div style="font-size:14px;font-weight:700;">Pago mínimo</div><div style="font-size:11px;color:var(--gray);">Vence el 12/06</div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;">S/ 0.00</div><div style="font-size:12px;color:var(--gray);">US$ 0.00</div></div></div>
+      <button class="btn-g">Pagar tarjeta</button>
+    </div>
+    <div id="pc3" style="display:none;margin:14px;background:var(--glight);border-radius:14px;padding:15px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;">Deuda total <span style="width:16px;height:16px;border:2px solid var(--b);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--b);">i</span></div><div style="text-align:right;"><div style="font-size:18px;font-weight:800;">S/ 7,951.32</div><div style="font-size:12px;color:var(--gray);">US$ 24.27</div></div></div>
+      <div style="color:var(--g);font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;margin-bottom:12px;cursor:pointer;"><svg width="14" height="14" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Ver mis fechas de pago</div>
+      <button class="btn-g">Pagar tarjeta</button>
+    </div>
+    <!-- Actions -->
+    <div style="display:flex;justify-content:space-around;padding:8px 14px 12px;background:#fff;border-bottom:1px solid var(--gborder);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div><span style="font-size:11px;">Ver datos</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><span style="font-size:11px;">Apagar</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:44px;height:44px;background:var(--glight);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#4285F4;">G</div><span style="font-size:11px;">Google Pay</span></div>
+    </div>
+    <div class="tabs"><div class="tab act" id="mt1" onclick="switchMovTab(1)">Movimientos</div><div class="tab" id="mt2" onclick="switchMovTab(2)">En cuotas</div></div>
+    <!-- Movimientos tarjeta -->
+    <div id="movlist">
+      <div class="mv" style="opacity:.6;"><div class="ml"><div class="mn gry">Openpay gri</div><div class="md">Mar 09 Jun | 3:02 pm</div></div><div class="mr"><div class="ma gry">S/ -56.80</div><div class="mp">En proceso</div></div><span class="arr">›</span></div>
+      <div class="mv" style="opacity:.6;"><div class="ml"><div class="mn gry">Izi*confia salu</div><div class="md">Mar 09 Jun | 9:18 am</div></div><div class="mr"><div class="ma gry">S/ -25.00</div><div class="mp">En proceso</div></div><span class="arr">›</span></div>
+      <div class="mv" style="opacity:.6;"><div class="ml"><div class="mn gry">Izi*confia salu</div><div class="md">Mar 09 Jun | 9:15 am</div></div><div class="mr"><div class="ma gry">S/ -25.00</div><div class="mp">En proceso</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Confia salud</div><div class="md">Jue 04 Jun | 7:36 pm</div></div><div class="mr"><div class="ma">S/ -23.03</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Izi*confia salud</div><div class="md">Jue 04 Jun | 6:27 pm</div></div><div class="mr"><div class="ma">S/ -25.00</div></div><span class="arr">›</span></div>
+      <div class="mv" onclick="go('s-detmov','Pago tarj web app','Mié 03 Jun | 11:49 am','S/ 4,829.10','PAGO TARJ WEB APP')"><div class="ml"><div class="mn">Pago tarj web app</div><div class="md">Mié 03 Jun | 11:49 am</div></div><div class="mr"><div class="ma grn">S/ 4,829.10</div></div><span class="arr">›</span></div>
+      <div class="mv" onclick="go('s-detmov','Pago tarj web app','Mié 03 Jun | 11:49 am','US$ 23.96','PAGO TARJ WEB APP')"><div class="ml"><div class="mn">Pago tarj web app</div><div class="md">Mié 03 Jun | 11:49 am</div></div><div class="mr"><div class="ma grn">US$ 23.96</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Movistar app movil</div><div class="md">Lun 01 Jun | 10:58 am</div></div><div class="mr"><div class="ma">S/ -39.95</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Movistar app mt</div><div class="md">Lun 01 Jun | 10:58 am</div></div><div class="mr"><div class="ma">S/ -209.90</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Openpay grifo pishu</div><div class="md">Dom 31 May | 7:50 pm</div></div><div class="mr"><div class="ma">S/ -44.30</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Pago tarj web app</div><div class="md">Lun 11 May | 8:19 am</div></div><div class="mr"><div class="ma grn">S/ 5,490.88</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Pago tarj web app</div><div class="md">Lun 11 May | 8:19 am</div></div><div class="mr"><div class="ma grn">US$ 23.66</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Coqui</div><div class="md">Dom 10 May | 9:08 am</div></div><div class="mr"><div class="ma">S/ -96.00</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Burger king</div><div class="md">Sáb 09 May | 12:50 pm</div></div><div class="mr"><div class="ma">S/ -23.90</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Otto grill - real huan</div><div class="md">Sáb 09 May | 12:46 pm</div></div><div class="mr"><div class="ma">S/ -79.90</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Kfc</div><div class="md">Sáb 09 May | 12:43 pm</div></div><div class="mr"><div class="ma">S/ -22.80</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Burger king</div><div class="md">Sáb 09 May | 12:40 pm</div></div><div class="mr"><div class="ma">S/ -23.90</div></div><span class="arr">›</span></div>
+      <div class="mv"><div class="ml"><div class="mn">Mariategui huancayo</div><div class="md">Sáb 09 May | 10:05 am</div></div><div class="mr"><div class="ma">S/ -91.40</div></div><span class="arr">›</span></div>
+    </div>
+    <!-- En cuotas -->
+    <div id="cuotaslist" style="display:none;padding:16px;">
+      <div style="color:var(--g);font-size:13px;font-weight:600;margin-bottom:12px;cursor:pointer;">Requisitos para pasar a cuotas ›</div>
+      <div class="mv"><div class="ml"><div class="mn">Shopstar compra</div><div class="md">1 cuota - Nov 2025</div></div><div class="mr"><div class="ma">S/ 5,000.00</div></div><span class="arr">›</span></div>
+    </div>
+    <div style="height:16px;background:#fff;"></div>
+  </div>
+</div>
+
+<!-- ===== PRÉSTAMO ===== -->
+<div class="screen" id="s-prestamo">
+  <div class="sb white"><span>10:19 mar 9</span><div class="icons" style="color:var(--text);"><span>79</span></div></div>
+  <div class="nh white">
+    <div class="back" onclick="go('s-productos')"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">Mi Préstamo</div>
+    <div class="icons2"><div class="ic" style="position:relative;"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg><span class="dot"></span></div><div class="ic"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px;"><div style="display:flex;align-items:center;gap:12px;background:var(--glight);border-radius:14px;padding:13px;"><div style="width:42px;height:42px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">💰</div><div><div style="font-size:14px;font-weight:700;">Préstamo Efectivo Soles</div><div style="font-size:12px;color:var(--gray);">Monto solicitado S/ 74,000</div></div></div></div>
+    <div style="margin:0 14px 14px;border:1px solid var(--gborder);border-radius:16px;padding:16px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Próximo pago</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div><div style="font-size:11px;color:var(--gray);">Monto por pagar</div><div style="font-size:15px;font-weight:700;">S/ 1,534.66</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Cuota por pagar</div><div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:4px;">Cuota 23 <span style="width:16px;height:16px;border:2px solid var(--b);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--b);">i</span></div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Fecha de pago</div><div style="font-size:14px;font-weight:700;color:var(--b);">02 jul 2026</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Cuotas pagadas</div><div style="font-size:14px;font-weight:800;">22 de 60</div></div>
+      </div>
+      <button class="btn-g" style="margin-bottom:10px;">Pagar mi cuota</button>
+      <button class="btn-o">Otras opciones de pago</button>
+    </div>
+    <div style="margin:0 14px 14px;border:1px solid var(--gborder);border-radius:16px;padding:16px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Detalle del préstamo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><div style="font-size:11px;color:var(--gray);">Deuda hasta la fecha</div><div style="font-size:14px;font-weight:700;">S/ 50,865.30</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Tipo de cuota</div><div style="font-size:14px;font-weight:700;">Ordinaria</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Fecha de desembolso</div><div style="font-size:14px;font-weight:700;">11 jul 2024</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">TEA</div><div style="font-size:14px;font-weight:700;">7.99%</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">Número de préstamo</div><div style="font-size:13px;font-weight:700;">000-01365975</div></div>
+        <div><div style="font-size:11px;color:var(--gray);">TCEA</div><div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:3px;">9.09% <span style="width:14px;height:14px;border:2px solid var(--b);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:var(--b);">i</span></div></div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gborder);"><div style="color:var(--g);font-size:13px;font-weight:600;cursor:pointer;">¿Qué incluye la deuda hasta la fecha?</div></div>
+    </div>
+    <div style="margin:0 14px 14px;border:1px solid var(--gborder);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+      <span style="color:var(--g);font-size:14px;font-weight:600;">Historial de pagos</span>
+      <svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div style="height:16px;"></div>
+  </div>
+</div>
+
+<!-- ===== CTS ===== -->
+<div class="screen" id="s-cts">
+  <div class="sb white"><span>10:19 mar 9</span><div class="icons" style="color:var(--text);"><span>78</span></div></div>
+  <div class="nh white">
+    <div class="back" onclick="go('s-productos')"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">Mi Cuenta</div>
+    <div class="icons2"><div class="ic"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px;background:var(--gl);">
+      <div style="background:#fff;border-radius:14px;padding:13px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <div style="font-size:28px;">🐷</div>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:700;">CTS Soles</div><div style="font-size:16px;font-weight:800;color:var(--g);">S/ 10.19</div></div>
+        <svg width="18" height="18" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </div>
+    </div>
+    <div style="background:#fff;border-top:1px solid var(--gborder);">
+      <div class="tab act" style="padding:12px;text-align:center;display:block;">Movimientos</div>
+    </div>
+    <div class="mv"><div class="ml"><div class="mn">Interes ganado</div><div class="md">Vie 28 Feb | 12:00 AM</div></div><div class="mr"><div class="ma grn">S/ 0.05</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Interes ganado</div><div class="md">Vie 31 Ene | 12:00 AM</div></div><div class="mr"><div class="ma grn">S/ 0.05</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Interes ganado</div><div class="md">Mar 31 Dic | 12:00 AM</div></div><div class="mr"><div class="ma grn">S/ 0.28</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Transf web/app</div><div class="md">Lun 02 Dic | 8:47 AM</div></div><div class="mr"><div class="ma">S/ -1,400.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Interes ganado</div><div class="md">Sáb 30 Nov | 12:00 AM</div></div><div class="mr"><div class="ma grn">S/ 6.30</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Entel peru-p.se</div><div class="md">Vie 08 Nov | 2:22 PM</div></div><div class="mr"><div class="ma">S/ -79.21</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">L/disp. transf</div><div class="md">Vie 08 Nov | 12:06 PM</div></div><div class="mr"><div class="ma">S/ -4,955.67</div></div><span class="arr">›</span></div>
+    <div style="height:16px;background:#fff;"></div>
+  </div>
+</div>
+
+<!-- ===== OPERACIONES ===== -->
+<div class="screen" id="s-operaciones">
+  <div class="sb green"><span>10:16 mar 9</span><div class="icons"><span>79</span></div></div>
+  <div style="background:var(--g);padding:14px 14px 20px;"><div style="color:#fff;font-size:22px;font-weight:800;">Operaciones</div></div>
+  <div class="scroll">
+    <div class="op-title">Movimientos Plin</div>
+    <div class="mv" onclick="go('s-detmov','Yape - Renzo D Gordillo H','Mar 09 Jun | 9:47 pm','-S/ 70.00','Yape')"><div class="ml"><div class="mn">Yape - Renzo D Gordillo H</div><div class="md">Mar 09 Jun | 9:47 pm</div></div><div class="mr"><div class="ma red">-S/ 70.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin - Sheyla Geraldine Arand...</div><div class="md">Sáb 06 Jun | 1:59 pm</div></div><div class="mr"><div class="ma red">-S/ 445.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin - Sheyla Geraldine Arand...</div><div class="md">Sáb 06 Jun | 1:59 pm</div></div><div class="mr"><div class="ma red">-S/ 500.00</div></div><span class="arr">›</span></div>
+    <div class="mv"><div class="ml"><div class="mn">Plin - Sheyla Geraldine Arand...</div><div class="md">Sáb 06 Jun | 1:51 pm</div></div><div class="mr"><div class="ma red">-S/ 280.00</div></div><span class="arr">›</span></div>
+    <div style="display:flex;gap:10px;padding:14px;">
+      <button class="btn-o" style="flex:1;font-size:13px;padding:10px;">+ Nuevo Plineo</button>
+      <button class="btn-b" style="flex:1;font-size:13px;padding:10px;">Ver todos</button>
+    </div>
+    <div style="margin:0 14px 14px;background:var(--gl);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+      <div><div style="font-size:14px;font-weight:700;color:var(--g);">Conoce y controla</div><div style="font-size:12px;color:var(--gray);margin-top:2px;">tus gastos e ingresos del mes desde aquí con Mis Finanzas.</div></div>
+      <svg width="20" height="20" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="op-title">Gestión de Operaciones</div>
+    <div style="padding:0 14px;margin-bottom:8px;"><div style="border-bottom:2px solid var(--b);padding-bottom:6px;font-size:14px;font-weight:700;color:var(--b);display:inline-block;">Favoritas</div></div>
+    <div style="margin:0 14px 14px;border:1px solid var(--gborder);border-radius:12px;padding:12px;display:flex;align-items:center;gap:8px;"><svg width="18" height="18" fill="none" stroke="var(--gray)" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="font-size:13px;color:var(--gray);">Busca una operación favorita</span></div>
+    <div style="height:16px;"></div>
+  </div>
+  <div class="bnav">
+    <div class="ni" onclick="go('s-home')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></div>
+    <div class="ni act"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg><span>Operaciones</span></div>
+    <div style="display:flex;justify-content:center;align-items:flex-end;"><div class="qr"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01"/></svg></div></div>
+    <div class="ni" onclick="go('s-beneficios')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/></svg><span>Beneficios</span></div>
+    <div class="ni" onclick="go('s-parati')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Para ti</span></div>
+  </div>
+</div>
+
+<!-- ===== BENEFICIOS ===== -->
+<div class="screen" id="s-beneficios">
+  <div class="sb green"><span>10:16 mar 9</span><div class="icons"><span>79</span></div></div>
+  <div style="background:var(--g);padding:14px 14px 16px;">
+    <div style="color:#fff;font-size:22px;font-weight:800;margin-bottom:10px;">Mis beneficios</div>
+    <div style="background:#fff;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;"><svg width="16" height="16" fill="none" stroke="var(--gray)" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="font-size:13px;color:var(--gray);">Encuentra las mejores promos</span></div>
+  </div>
+  <div class="scroll">
+    <!-- Hero banner -->
+    <div style="background:#6EC6F0;margin:14px;border-radius:14px;padding:18px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:16px;font-weight:800;color:var(--b);">Hasta 40% dscto. en TVs</div><div style="font-size:12px;color:var(--b);margin-top:4px;">Compra en Shopstar con hasta 12 cuotas sin intereses</div><div style="font-size:10px;color:var(--b);margin-top:6px;font-weight:700;">shopstar.pe</div></div>
+      <div style="font-size:48px;">📺</div>
+    </div>
+    <!-- Dots -->
+    <div style="display:flex;justify-content:center;gap:6px;margin-bottom:14px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gborder);"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gborder);"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--g);"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gborder);"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gborder);"></div>
+    </div>
+    <!-- Categories -->
+    <div style="display:flex;justify-content:space-around;padding:0 14px 16px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:52px;height:52px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">🍽️</div><span style="font-size:11px;color:var(--text);">Restaurant...</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:52px;height:52px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">✈️</div><span style="font-size:11px;">Viajes</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:52px;height:52px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">🛍️</div><span style="font-size:11px;">Compras</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:52px;height:52px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--g);">→</div><span style="font-size:11px;">Ver más</span></div>
+    </div>
+    <div style="padding:0 14px 8px;font-size:15px;font-weight:800;color:var(--b);">Beneficios especiales para ti</div>
+    <div style="display:flex;gap:12px;padding:0 14px 16px;overflow-x:auto;">
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:60px;height:60px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;">🎁</div><span style="font-size:11px;text-align:center;">Cuenta sueldo</span></div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:60px;height:60px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;">💬</div><span style="font-size:11px;text-align:center;">Plin promos</span></div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><div style="width:60px;height:60px;background:var(--gl);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--g);font-weight:700;">shop</div><span style="font-size:11px;text-align:center;">Tienda Shopstar</span></div>
+    </div>
+    <div style="padding:0 14px 8px;font-size:14px;font-weight:700;">Beneficios para ti</div>
+    <div style="display:flex;gap:10px;padding:0 14px 16px;overflow-x:auto;">
+      <div style="flex-shrink:0;width:160px;border:1px solid var(--gborder);border-radius:12px;overflow:hidden;cursor:pointer;"><div style="background:#F5F5F5;height:80px;display:flex;align-items:center;justify-content:center;font-size:36px;">🏪</div><div style="padding:10px;"><div style="font-size:11px;color:var(--g);">En tienda</div><div style="font-size:13px;font-weight:700;margin:2px 0;">Metro</div><div style="font-size:11px;color:var(--gray);">¡Solo el 15 de junio! S/20 de dscto en tu boleta de Metro</div></div></div>
+      <div style="flex-shrink:0;width:160px;border:1px solid var(--gborder);border-radius:12px;overflow:hidden;cursor:pointer;"><div style="background:#F0F0F0;height:80px;display:flex;align-items:center;justify-content:center;font-size:36px;">🎵</div><div style="padding:10px;"><div style="font-size:11px;color:var(--b);">Online</div><div style="font-size:13px;font-weight:700;margin:2px 0;">20% dscto. para...</div><div style="font-size:11px;color:var(--gray);">Venta exclusiva con Tarjetas Interbank</div><div style="font-size:12px;font-weight:700;color:var(--g);margin-top:4px;">20% dscto</div></div></div>
+    </div>
+    <div style="margin:0 14px 14px;border:1px solid var(--gborder);border-radius:12px;overflow:hidden;cursor:pointer;"><div style="padding:10px;text-align:center;color:var(--g);font-size:13px;font-weight:600;">Ver más →</div></div>
+    <div style="height:16px;"></div>
+  </div>
+  <div class="bnav">
+    <div class="ni" onclick="go('s-home')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></div>
+    <div class="ni" onclick="go('s-operaciones')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg><span>Operaciones</span></div>
+    <div style="display:flex;justify-content:center;align-items:flex-end;"><div class="qr"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div></div>
+    <div class="ni act"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/></svg><span>Beneficios</span></div>
+    <div class="ni" onclick="go('s-parati')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Para ti</span></div>
+  </div>
+</div>
+
+<!-- ===== PARA TI ===== -->
+<div class="screen" id="s-parati">
+  <div class="sb green"><span>10:16 mar 9</span><div class="icons"><span>79</span></div></div>
+  <div style="background:var(--g);padding:14px 14px 20px;"><div style="color:#fff;font-size:22px;font-weight:800;">Para ti</div></div>
+  <div class="scroll">
+    <div style="margin:14px;background:#DBEAFE;border-radius:14px;padding:18px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:16px;font-weight:800;color:var(--b);">Haz crecer tu dinero hoy</div><div style="font-size:12px;color:var(--b);margin-top:4px;">Descubre nuevas opciones de inversión en Mis Inversiones</div></div>
+      <div style="font-size:40px;">📈</div>
+    </div>
+    <div style="padding:0 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="font-size:15px;font-weight:700;">Productos para ti</div><span style="font-size:13px;color:var(--g);font-weight:600;cursor:pointer;">Ver todos ›</span></div>
+    <div style="margin:0 14px 12px;border:1px solid var(--gborder);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;"><div style="font-size:32px;">💰</div><div><div style="font-size:14px;font-weight:700;">Cuenta Súper Tasa</div><div style="font-size:12px;color:var(--gray);margin-top:2px;">Aprovecha hasta 4.8% hoy. Haz crecer tu dinero y dispón de él libremente. ¡No la dejes pasar!</div></div></div>
+    <div style="margin:0 14px 12px;border:1px solid var(--gborder);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;"><div style="font-size:32px;">⏰</div><div><div style="font-size:14px;font-weight:700;">Depósito a plazos</div><div style="font-size:12px;color:var(--gray);margin-top:2px;">Ábrela desde S/2,000 y obtén tasas exclusivas.</div></div></div>
+    <div style="margin:0 14px 16px;border:1px solid var(--gborder);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;"><div style="font-size:32px;">📅</div><div><div style="font-size:14px;font-weight:700;">Pago Automático</div><div style="font-size:12px;color:var(--gray);margin-top:2px;">Deja de estar pendiente del vencimiento de tus recibos.</div></div></div>
+    <div style="height:16px;"></div>
+  </div>
+  <div class="bnav">
+    <div class="ni" onclick="go('s-home')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></div>
+    <div class="ni" onclick="go('s-operaciones')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M15 9l-6 6m0-6l6 6"/></svg><span>Operaciones</span></div>
+    <div style="display:flex;justify-content:center;align-items:flex-end;"><div class="qr"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div></div>
+    <div class="ni" onclick="go('s-beneficios')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/></svg><span>Beneficios</span></div>
+    <div class="ni act"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Para ti</span></div>
+  </div>
+</div>
+
+<!-- ===== MENÚ LATERAL ===== -->
+<div class="screen" id="s-menu">
+  <div class="sb white"><span>10:16 mar 9</span><div class="icons" style="color:var(--text);"><span>79</span></div></div>
+  <div class="nh white">
+    <div class="back" onclick="go('s-home')"><svg fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">Más opciones</div>
+    <div></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--gborder);">
+      <div style="width:52px;height:52px;background:#E0E8FF;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--b);">P</div>
+      <div><div style="font-size:16px;font-weight:700;">Pedro Luis Silva Rojas</div><div style="font-size:12px;color:var(--g);font-weight:600;">Millas Benefit: 33,241</div></div>
+      <div style="margin-left:auto;width:36px;height:36px;background:var(--gl);border-radius:10px;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h3M17 14v3"/></svg></div>
+    </div>
+    <div style="display:flex;padding:14px;gap:10px;border-bottom:1px solid var(--gborder);">
+      <div style="flex:1;background:var(--gl);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;"><svg width="22" height="22" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span style="font-size:11px;text-align:center;">Bloquear mi tarjeta</span></div>
+      <div style="flex:1;background:var(--gl);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;"><svg width="22" height="22" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91"/></svg><span style="font-size:11px;text-align:center;">Me voy de viaje</span></div>
+      <div style="flex:1;background:var(--gl);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;"><div style="width:28px;height:28px;border-radius:50%;background:#E0E8FF;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div><span style="font-size:11px;text-align:center;">Chatear con Avi</span></div>
+    </div>
+    <div class="menu-item"><div class="mi-left"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="var(--g)" stroke-width="2"/><path d="M6 20v-2a6 6 0 0 1 12 0v2" fill="none" stroke="var(--g)" stroke-width="2"/></svg><span>Mi perfil</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div class="menu-item"><div class="mi-left"><svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configurar mi App</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div class="menu-item"><div class="mi-left"><svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Configurar mis tarjetas</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div class="menu-item"><div class="mi-left"><div style="width:20px;height:20px;background:var(--g);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;">plin</div><span>Configurar Plin</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div class="menu-item"><div class="mi-left"><svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Seguridad</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div class="menu-item"><div class="mi-left"><svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Centro de ayuda</span></div><div class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>
+    <div style="height:16px;"></div>
+  </div>
+</div>
+
+<!-- ===== DETALLE MOVIMIENTO ===== -->
+<div class="screen" id="s-detmov">
+  <div class="sb white"><span>10:17 mar 9</span><div class="icons" style="color:var(--text);"><span>79</span></div></div>
+  <div style="padding:8px 14px;cursor:pointer;" id="det-back-btn"><svg width="22" height="22" fill="none" stroke="var(--g)" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+  <div class="scroll">
+    <div style="background:#fff;padding:20px 20px 28px;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:var(--b);margin-bottom:10px;">Detalle de movimiento</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span id="det-amount" style="font-size:36px;font-weight:800;color:var(--b);">S/ 1,749.00</span>
+        <span style="font-size:24px;color:var(--g);">✓</span>
+      </div>
+      <div id="det-date" style="color:var(--gray);font-size:12px;margin-top:4px;">04 Jun 2026 | 9:18 AM</div>
+      <div style="margin-top:18px;border-top:1px solid var(--gborder);padding-top:14px;text-align:left;">
+        <div class="ir"><span class="ik">Tipo de operación</span><span class="iv blue" id="det-tipo">Transf Web/App</span></div>
+        <div class="ir"><span class="ik">Fecha del proceso</span><span class="iv blue" id="det-fecha">04 Jun 2026</span></div>
+        <div class="ir"><span class="ik">Origen</span><span class="iv blue">Serv Cli X Internet</span></div>
+      </div>
+    </div>
+    <div style="background:var(--g);padding:24px;display:flex;flex-direction:column;gap:12px;min-height:220px;justify-content:flex-end;">
+      <button class="btn-o" style="background:transparent;border-color:#fff;color:#fff;"><svg width="16" height="16" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Compartir</button>
+      <button class="btn-o" style="background:transparent;border-color:#fff;color:#fff;"><svg width="16" height="16" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Descargar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let prevScreen = 's-productos';
+
+function go(screenId, a, b, c, d) {
+  // Store where detmov was called from
+  if(screenId === 's-detmov') {
+    const cur = document.querySelector('.screen.active');
+    if(cur) prevScreen = cur.id;
+    document.getElementById('det-amount').textContent = c || 'S/ 0.00';
+    document.getElementById('det-date').textContent = b ? b.replace('Mar 09 Jun','09 Jun 2026').replace('Mié 03 Jun','03 Jun 2026').replace('Sáb 06 Jun','06 Jun 2026').replace('Vie 29 May','29 May 2026') : '';
+    document.getElementById('det-tipo').textContent = d || 'Transferencia';
+    document.getElementById('det-fecha').textContent = b ? b.split('|')[0].trim().replace('Mar 09 Jun','09 Jun 2026').replace('Mié 03 Jun','03 Jun 2026').replace('Sáb 06 Jun','06 Jun 2026').replace('Vie 29 May','29 May 2026') : '';
+    document.getElementById('det-back-btn').onclick = () => go(prevScreen);
+  }
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display='none'; });
+  const t = document.getElementById(screenId);
+  t.style.display = 'flex';
+  t.classList.add('active');
+  const sc = t.querySelector('.scroll');
+  if(sc) sc.scrollTop = 0;
+}
+
+function switchPayTab(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('pt'+i).className = 'tab';
+    document.getElementById('pc'+i).style.display = 'none';
+  });
+  document.getElementById('pt'+n).className = 'tab act';
+  document.getElementById('pc'+n).style.display = 'block';
+}
+
+function switchMovTab(n) {
+  document.getElementById('mt1').className = n===1 ? 'tab act' : 'tab';
+  document.getElementById('mt2').className = n===2 ? 'tab act' : 'tab';
+  document.getElementById('movlist').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('cuotaslist').style.display = n===2 ? 'block' : 'none';
+}
+
+function launchFS() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  if(req) req.call(el).catch(()=>{});
+  document.getElementById('splash').style.display = 'none';
+  go('s-login');
+}
+
+// Init
+go('s-login');
+</script>
+</body>
+</html>
